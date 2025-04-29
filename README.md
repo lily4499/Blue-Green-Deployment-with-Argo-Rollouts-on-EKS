@@ -199,11 +199,7 @@ print(f"\n✅ All files created successfully under {base_dir}")
 
 ```
 
-
-
 ---
-
-```markdown
 
 
 ## 🧠 Technologies Used
@@ -217,13 +213,13 @@ print(f"\n✅ All files created successfully under {base_dir}")
 
 ---
 
-## 🛠️ Step-by-Step Setup
+# 🛠️ Full Step-by-Step Setup
 
 ---
 
-### 1️⃣ Provision EKS Cluster
+## 1️⃣ Provision EKS Cluster
 
-Use **eksctl** to create an EKS cluster:
+Use **eksctl** to create a Kubernetes cluster on AWS:
 
 ```bash
 eksctl create cluster \
@@ -234,9 +230,11 @@ eksctl create cluster \
   --nodes 2
 ```
 
+✅ A working EKS cluster will be created.
+
 ---
 
-### 2️⃣ Install ArgoCD and Argo Rollouts
+## 2️⃣ Install ArgoCD and Argo Rollouts
 
 Run the automated setup script:
 
@@ -244,43 +242,76 @@ Run the automated setup script:
 bash setup.sh
 ```
 
-The script does:
-
-- Install **ArgoCD**
-- Install **Argo Rollouts Controller**
-- Install **Argo Rollouts CLI plugin**
-- Forward ArgoCD UI on port 8080
-- Forward Argo Rollouts dashboard on port 3100
+✅ This script:
+- Installs **ArgoCD**
+- Installs **Argo Rollouts Controller**
+- Installs **Argo Rollouts CLI Plugin**
+- Port-forwards ArgoCD UI on `localhost:8080`
+- Opens Argo Rollouts dashboard at `localhost:3100`
 
 ---
 
-### 3️⃣ Build and Push App Version 1
+## 3️⃣ Create Application in ArgoCD UI
+
+1. Visit [https://localhost:8080](https://localhost:8080).
+
+2. Login:
+   - Username: `admin`
+   - Password:
+
+     ```bash
+     kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+     ```
+
+3. Click **`+ New App`**.
+
+4. Fill out the fields:
+
+| Field | Value |
+|:------|:------|
+| **Application Name** | `sample-app` |
+| **Project** | `default` |
+| **Sync Policy** | Manual or Automatic |
+| **Repository URL** | Your GitHub Repo (example: `https://github.com/your-username/blue-green-eks.git`) |
+| **Revision** | `HEAD` |
+| **Path** | `/` |
+| **Cluster** | `https://kubernetes.default.svc` |
+| **Namespace** | `default` |
+
+5. Click **Create**.
+
+✅ ArgoCD will now automatically sync your rollout.yaml and service.yaml.
+
+---
+
+## 4️⃣ Build and Push App Version 1 (Blue)
 
 ```bash
 docker build -t your-repo/sample-app:1 .
 docker push your-repo/sample-app:1
 ```
 
-✅ `app.js` responds with `"Hello from Version 1"`
+✅ App version 1 (`app.js`) responds with `"Hello from Version 1"`.
 
 ---
 
-### 4️⃣ Deploy Blue Version
+## 5️⃣ Deploy Blue Version
 
-Apply rollout and service:
+Sync the Application inside ArgoCD (click **Sync** button).  
+Or manually apply:
 
 ```bash
 kubectl apply -f rollout.yaml
 kubectl apply -f service.yaml
 ```
 
-✅ `sample-app-active` serves Version 1.
+✅ `sample-app-active` Service is serving Version 1 (Blue).
 
 ---
 
-### 5️⃣ Upgrade to Version 2
+## 6️⃣ Upgrade to Version 2 (Green)
 
-Switch to v2 code:
+Switch code to version 2:
 
 ```bash
 cp app-v2.js app.js
@@ -288,12 +319,21 @@ docker build -t your-repo/sample-app:2 .
 docker push your-repo/sample-app:2
 ```
 
-Update `rollout.yaml` to use `sample-app:2`, commit and push.  
-ArgoCD detects the change ➔ Deploys Green quietly under `sample-app-preview`.
+Update `rollout.yaml`:
+
+```yaml
+containers:
+- name: sample-app
+  image: your-repo/sample-app:2
+```
+
+Push this update to GitHub.
+
+✅ ArgoCD automatically detects changes and deploys Green pods behind `sample-app-preview`.
 
 ---
 
-### 6️⃣ Test the Green Version
+## 7️⃣ Test the Green Version
 
 Port-forward preview service:
 
@@ -301,70 +341,70 @@ Port-forward preview service:
 kubectl port-forward svc/sample-app-preview 8081:80
 ```
 
-Visit: [http://localhost:8081](http://localhost:8081)
+Visit:  
+[http://localhost:8081](http://localhost:8081)
 
-✅ You should see `"Hello from Version 2"`
+✅ You should see `"Hello from Version 2 (Green)!"`
+
+✅ Live users are **still on Version 1 (Blue)**.
 
 ---
 
-### 7️⃣ Promote Green to Live
+## 8️⃣ Promote Green to Live
 
-When tests pass:
-✅ You have validated the Green environment by accessing sample-app-preview and it looks good (no bugs, no downtime, no errors).
+When testing is successful:
 
 ```bash
 kubectl argo rollouts promote sample-app
 ```
 
-✅ Live traffic now switches to Version 2 (Green).
-✅ NO downtime. ✅ NO Pod restarts. ✅ Switch happens instantly at the Service level.
+✅ Live production traffic now switches to Version 2 (Green) **without downtime**.
+
+✅ Argo Rollouts updates `sample-app-active` service to point to Green pods.
 
 ---
 
-### 8️⃣ Rollback if Necessary
+## 9️⃣ Rollback if Necessary
 
-If anything goes wrong:
+If issues occur even after promotion:
 
 ```bash
 kubectl argo rollouts undo sample-app
 ```
 
-✅ Instantly rollback to Version 1 (Blue).
+✅ Instantly rollback to previous Version 1 (Blue) without downtime.
 
 ---
 
-## 📈 Argo Rollouts Dashboard Access
+# 📈 Argo Rollouts Dashboard Access
 
-Run:
+Launch dashboard:
 
 ```bash
 kubectl argo rollouts dashboard
 ```
 
-Visit:
+Open browser at:  
+[http://localhost:3100/rollouts](http://localhost:3100/rollouts)
 
-```bash
-http://localhost:3100/rollouts
-```
-
-✅ Visual live status of deployments!
+✅ You can visually monitor Blue-Green deployments, promotion, and rollback events.
 
 ---
 
-## 📋 Rollout Management CLI Commands
+# 📋 Rollout Management CLI Commands
 
 | Command | Purpose |
 |:--------|:--------|
-| `kubectl argo rollouts get rollout sample-app` | View rollout details |
-| `kubectl argo rollouts promote sample-app` | Promote Green version to live |
+| `kubectl argo rollouts get rollout sample-app` | View rollout status |
+| `kubectl argo rollouts promote sample-app` | Promote Green version |
 | `kubectl argo rollouts undo sample-app` | Rollback to previous Blue version |
-| `kubectl argo rollouts dashboard` | Open Rollouts visual dashboard |
+| `kubectl argo rollouts dashboard` | Open visual dashboard |
 
 ---
 
-## 🛡️ How to Check Which Version is Live
+# 🛡️ How to Check Which Version is Live
 
-Run the script:
+Run the helper script:
 
 ```bash
 bash check-version.sh
@@ -377,11 +417,14 @@ kubectl get pods -l app=sample-app -o wide
 kubectl port-forward svc/sample-app-active 8080:80
 ```
 
-Access [http://localhost:8080](http://localhost:8080) and check which version message you see.
+Visit:  
+[http://localhost:8080](http://localhost:8080)
+
+✅ You can verify if users are seeing Version 1 or Version 2.
 
 ---
 
-## 📈 Deployment Flow Diagram
+# 📈 Deployment Flow Diagram
 
 ```mermaid
 flowchart TD
@@ -395,28 +438,26 @@ flowchart TD
 
 ---
 
-## ✅ Benefits
+# ✅ Benefits
 
-- 🚀 Zero Downtime
-- 🔥 Safe Version Testing
-- 🔄 Instant Rollback
-- 📈 Visual Observability
-- 🔧 Full Automation Setup
-
+- 🚀 Zero Downtime Deployment
+- 🔥 Safe Version Testing (before switch)
+- 🔄 Instant Rollbacks
+- 📈 Visual Observability via Dashboard
+- 🔧 GitOps-ready with ArgoCD Automation
 
 ---
 
-# ✅ Final Result
+# 📜 License
 
-This project now includes:
+MIT License
 
-- EKS cluster setup
-- ArgoCD install + usage
-- Argo Rollouts install + usage
-- Jenkinsfile for optional CI
-- Rollout management
-- Visual dashboard for rollout progress
-- Complete upgrade simulation (v1 ➔ v2 ➔ promote ➔ undo)
+---
+
+# 🌟 Final Notes
+
+✅ This project demonstrates real-world **Progressive Delivery (Blue-Green)** best practices used by companies like Netflix, Shopify, Amazon.  
+✅ It's production-grade, safe, observable, and GitOps-driven with ArgoCD + Argo Rollouts.
 
 ---
 
