@@ -4,7 +4,7 @@
 
 ## 🌍 Real-World Scenario
 
-You're a DevOps engineer at a fast-growing SaaS company. To minimize downtime during deployments and make rollbacks seamless, you implement a **Blue-Green deployment mechanism** using **Argo Rollouts** on an EKS cluster. The app can be tested in the "Green" environment before switching live traffic from "Blue" to "Green".
+> **You're a DevOps engineer at a fast-growing SaaS company. To minimize downtime during deployments and make rollbacks seamless, you implement a **Blue-Green deployment mechanism** using **Argo Rollouts** on an EKS cluster. The app can be tested in the "Green" environment before switching live traffic from "Blue" to "Green".
 
 ---
 
