@@ -432,6 +432,7 @@ Visit:
 
 # 📈 Deployment Flow Diagram
 
+```markdown
 ```mermaid
 flowchart TD
     A[Blue (v1) Live] -->|Deploy Green (v2)| B[Green Pods Created]
@@ -440,7 +441,6 @@ flowchart TD
     C -- No --> E[Undo Rollout]
     D --> F[Green (v2) Live]
     E --> A
-```
 
 ---
 
