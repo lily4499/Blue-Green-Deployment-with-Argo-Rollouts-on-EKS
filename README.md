@@ -289,7 +289,13 @@ bash setup.sh
 ```bash
 docker build -t your-repo/sample-app:1 .
 docker push your-repo/sample-app:1
+docker run -p 3000:3000 your-repo/sample-app:1
 ```
+Access locally:
+```bash
+http://localhost:3000
+```
+You validate that the app works fine locally before moving to the cloud.
 
 ✅ App version 1 (`app.js`) responds with `"Hello from Version 1"`.
 
