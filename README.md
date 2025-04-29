@@ -310,12 +310,14 @@ Visit: [http://localhost:8081](http://localhost:8081)
 ### 7️⃣ Promote Green to Live
 
 When tests pass:
+✅ You have validated the Green environment by accessing sample-app-preview and it looks good (no bugs, no downtime, no errors).
 
 ```bash
 kubectl argo rollouts promote sample-app
 ```
 
 ✅ Live traffic now switches to Version 2 (Green).
+✅ NO downtime. ✅ NO Pod restarts. ✅ Switch happens instantly at the Service level.
 
 ---
 
